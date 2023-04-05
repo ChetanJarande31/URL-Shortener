@@ -30,5 +30,5 @@ async def demo_get_path_id(path_id: int):
 
 @app.get("/bot/get-insta-profile/{profile_id}")
 async def get_profile_url(profile_id: str):
-    response = {"url" : (Profile.from_username(Instaloader().context, profile_id).profile_pic_url)}
+    response = {"url" : Profile.from_username(Instaloader().context, profile_id).profile_pic_url}
     return response
