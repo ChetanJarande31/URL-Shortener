@@ -18,7 +18,7 @@ from schemas.urlShortener import UrlSchema
 from instaloader import Instaloader, Profile
 
 # # other 
-from common.constants import USER_ID
+from common.constants import SLUG_LIMIT, USER_ID
 
 # # ******************----------- End Of Imports -----------******************
 
@@ -54,7 +54,7 @@ async def create_short_url(url: UrlSchema):
     try:
         # convert pydantic schema object to python dict
         url = dict(url)
-        slug = url.get("customSlugCode", shortuuid.ShortUUID().random(length=8))
+        slug = url.get("customSlugCode", shortuuid.ShortUUID().random(length=SLUG_LIMIT))
 
         # check is url exist in DB , IF so raise an exception
         db_url_data = url_shortner_db.get_url_data_by_slug(slug=slug)

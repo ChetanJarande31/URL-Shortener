@@ -1,12 +1,13 @@
 # from typing import Optional
 from pydantic import BaseModel, validator, Field
 import validators
+from common.constants import SLUG_LIMIT
 
 
 class UrlSchema(BaseModel):
     longUrl: str
     customSlugCode: str | None = Field(
-        default=None, title="The custom code for short url", max_length=8,
+        default=None, title="The custom code for short url", max_length=SLUG_LIMIT,
     )
 
     @validator('longUrl')
