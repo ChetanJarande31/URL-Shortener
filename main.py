@@ -2,6 +2,7 @@
 import base64
 import os
 import shortuuid 
+import traceback
 # FastAPI
 from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -78,7 +79,7 @@ async def check_mongodb_status():
         response['message'] = url_shortner_db.get_url(user_id="chetan_jarande", url_id="test")
         return JSONResponse(response, 200)
     except Exception as err:
-        response['error'] = f"Error: {err}"
+        response['error'] = f"Error: {err}. \nTraceback : {traceback.format_exc()}"
         return JSONResponse(response, 500)
 
 
