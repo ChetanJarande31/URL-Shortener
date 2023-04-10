@@ -83,7 +83,7 @@ async def get_slugs_for_user(user_id: str) -> list:
         if len(urls_data) > 0:
             response["data"] = urls_data
         else:
-            response['message'] = f"no data found for a user {user_id}" 
+            response['message'] = f"no data found for a user {user_id}"
         return JSONResponse(response, 200)
     except Exception as err:
         response["error"] = f"Error: {err}. \nTraceback : {traceback.format_exc()}"
@@ -105,10 +105,11 @@ async def test():
 
 @app.get("/{slug}")
 async def redirect_slug(slug: str):
+    """Redirect of slug url using Long url."""
     response = {}
     try:
         slug_data = url_shortner_db.get_url_data_by_slug(slug=slug)
-        if not slug_data
+        if not slug_data:
             raise HTTPException(status_code= 404, detail = "URL not found !")
         response = RedirectResponse(url = slug_data["longUrl"])
         return JSONResponse(response, 200)
