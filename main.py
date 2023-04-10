@@ -29,7 +29,13 @@ app.add_middleware(
 )
 
 # Create an instance of the database wrapper class
-url_shortner_db = UrlShortenerDB("mongodb-uri", "db-name", "collection-name")
+MONGO_USER = "chetanjarande"
+PASSWORD = "chetanmongodbcluster1"
+MONGO_CLUSTER = "chetanmongodbcluster1"
+DB_NAME = "TelegramBots"
+COLLECTION_NAME = "UrlShortner"
+DB_URL = f"mongodb+srv://{MONGO_USER}:<{PASSWORD}>@{MONGO_CLUSTER}.jni2zyq.mongodb.net/?retryWrites=true&w=majority"
+url_shortner_db = UrlShortenerDB(db_url=DB_URL, db_name=DB_NAME, collection_name=COLLECTION_NAME)
 
 # Templates
 templates = Jinja2Templates(directory = "templates")
@@ -75,7 +81,6 @@ async def check_mongodb_status():
     """Hi."""
     response = {}
     try:
-        url_shortner_db = UrlShortenerDB("mongodb-uri", "TelegramBots", "UrlShortner")
         response['message'] = url_shortner_db.get_url(user_id="chetan_jarande", url_id="test")
         return JSONResponse(response, 200)
     except Exception as err:

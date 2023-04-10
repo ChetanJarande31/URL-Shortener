@@ -4,18 +4,12 @@
 import base64
 from pymongo import MongoClient
 
-MONGO_USER = "chetanjarande"
-PASSWORD = "chetanmongodbcluster1"
-MONGO_CLUSTER = "chetanmongodbcluster1"
-DB_NAME = "TelegramBots"
-COLLECTION_NAME = "UrlShortner"
 
 class UrlShortenerDB:
-    def __init__(self, db_uri: str, db_name: str, collection_name: str):
-        self.db_client = MongoClient(f"mongodb+srv://{MONGO_USER}:<{PASSWORD}>@{MONGO_CLUSTER}.jni2zyq.mongodb.net/?retryWrites=true&w=majority")
-        # self.client = MongoClient(db_uri)
-        self.db = self.db_client[DB_NAME]
-        self.collection = self.db[COLLECTION_NAME]
+    def __init__(self, db_url: str, db_name: str, collection_name: str):
+        self.db_client = MongoClient(db_url)
+        self.db = self.db_client[db_name]
+        self.collection = self.db[collection_name]
 
     def create_url(self, data: dict) -> str:
         result = self.collection.insert_one({ **data, "click_count": 0})
