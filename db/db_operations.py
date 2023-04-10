@@ -1,5 +1,5 @@
-import qrcode
-from io import BytesIO
+# import qrcode
+# from io import BytesIO
 import base64
 from pymongo import MongoClient
 from bson import ObjectId
@@ -39,15 +39,15 @@ class UrlShortenerDB:
         result = self.collection.delete_one({"user_id": user_id, "_id": ObjectId(url_id)})
         return result.deleted_count > 0
 
-    def generate_qr_code(self, url: str) -> str:
-        qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
-        qr.add_data(url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        qr_code_image = base64.b64encode(buffer.getvalue()).decode("ascii")
-        return qr_code_image
+    # def generate_qr_code(self, url: str) -> str:
+    #     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+    #     qr.add_data(url)
+    #     qr.make(fit=True)
+    #     img = qr.make_image(fill_color="black", back_color="white")
+    #     buffer = BytesIO()
+    #     img.save(buffer, format="PNG")
+    #     qr_code_image = base64.b64encode(buffer.getvalue()).decode("ascii")
+    #     return qr_code_image
 
     def increment_click_count(self, user_id: str, url_id: str) -> None:
         self.collection.update_one({"user_id": user_id, "_id": ObjectId(url_id)}, {"$inc": {"click_count": 1}})

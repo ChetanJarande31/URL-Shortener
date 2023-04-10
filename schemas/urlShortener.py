@@ -9,6 +9,12 @@ class UrlSchema(BaseModel):
         default=None, title="The custom code for short url", max_length=8,
     )
 
+    @validator('longUrl')
+    def validate_url(cls, v):
+        if not validators.url(v):
+            raise ValueError("Long URL is invalid.")
+        return v
+    
     class Config:
         schema_extra = {
             'examples': [
@@ -19,8 +25,3 @@ class UrlSchema(BaseModel):
             ]
         }
 
-    @validator('longUrl')
-    def validate_url(cls, v):
-        if not validators.url(v):
-            raise ValueError("Long URL is invalid.")
-        return v
