@@ -5,7 +5,7 @@ import validators
 
 class UrlSchema(BaseModel):
     longUrl: str
-    customCode: str | None = Field(
+    customSlugCode: str | None = Field(
         default=None, title="The custom code for short url", max_length=8,
     )
 
@@ -20,7 +20,7 @@ class UrlSchema(BaseModel):
             'examples': [
                 {
                     "longUrl": "https://chetan.vercel.app.com",
-                    "customCode": "vercel",
+                    "customSlugCode": "vercel",
                 }
             ]
         }

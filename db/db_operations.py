@@ -3,6 +3,8 @@
 # from bson import ObjectId
 import base64
 from pymongo import MongoClient
+from datetime import datetime 
+from utils.helper_utilities import format_search_query
 
 
 class UrlShortenerDB:
@@ -12,21 +14,27 @@ class UrlShortenerDB:
         self.collection = self.db[collection_name]
 
     def create_url(self, data: dict) -> str:
-        result = self.collection.insert_one({ **data, "click_count": 0})
-        return str(result)
+        result = self.collection.insert_one({
+            **data,
+            "clickCount": 0,
+            "createdAt": datetime.now()
+        })
+        return result
 
-    def get_url(self, user_id: str, url_id: str) -> dict:
-        url_data = dict(self.collection.find_one({"_id": f"{user_id}-{url_id}"}))
-        return url_data
+    def get_url_data_by_slug(self, slug: str) -> dict:
+        """Get url data by slug."""
+        return  dict(self.collection.find_one({"slug": slug}))
 
-    # def get_all_urls(self, user_id: str) -> list:
-    #     urls = []
-    #     for url_object in self.collection.find({"user_id": user_id}):
-    #         urls.append({"id": str(url_object["_id"]), "url": url_object["url"], "click_count": url_object["click_count"]})
-    #     return urls
+    def get_data_by_user_and_slug(self, user_id: str, slug: str) -> dict:
+        """Get Url by user ID and Slug."""
+        return dict(self.collection.find_one(format_search_query(["userID", "slug"], [user_id, slug])))
+    
+    def get_urls_data_by_user_id(self, user_id: str) -> list:
+        """Find Urls by user ID."""
+        return list(self.collection.find(format_search_query(["userID"], [user_id])))
 
     # def update_url(self, user_id: str, url_id: str, url: str) -> bool:
-    #     result = self.collection.update_one({"user_id": user_id, "_id": ObjectId(url_id)}, {"$set": {"url": url}})
+        # result = self.collection.update_one({"userID": user_id, "_id": ObjectId(url_id)}, {"$set": {"url": url}})
     #     return result.modified_count > 0
 
     # def delete_url(self, user_id: str, url_id: str) -> bool:
@@ -44,4 +52,4 @@ class UrlShortenerDB:
     # #     return qr_code_image
 
     # def increment_click_count(self, user_id: str, url_id: str) -> None:
-    #     self.collection.update_one({"user_id": user_id, "_id": ObjectId(url_id)}, {"$inc": {"click_count": 1}})
+    #     self.collection.update_one({"user_id": user_id, "_id": ObjectId(url_id)}, {"$inc": {"clickCount": 1}})
