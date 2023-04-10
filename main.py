@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from schemas.urlShortener import Url, UrlShorten,UrlShortenUpdate, UrlSchema
+from schemas.urlShortener import UrlSchema
 from db.db_operations import  UrlShortenerDB
 
 # instagram

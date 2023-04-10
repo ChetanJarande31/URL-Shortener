@@ -17,3 +17,5 @@ websockets==10.4
 instaloader==4.9.6
 validators==0.20.0
 shortuuid==1.0.11
+pymongo==4.3.3
+bson==0.5.10
