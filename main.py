@@ -1,4 +1,4 @@
-import qrcode
+# import qrcode
 import base64
 import os
 import shortuuid 
