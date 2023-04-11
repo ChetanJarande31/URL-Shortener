@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pymongo import MongoClient
 
-from utils.helper_utilities import format_search_query, parse_json
+from utils.helper_utilities import format_search_query, parse_data_to_json
 
 
 class UrlShortenerDB:
@@ -23,11 +23,11 @@ class UrlShortenerDB:
 
     def get_url_data_by_slug(self, slug: str) -> dict:
         """Get url data by slug."""
-        return parse_json(self.collection.find_one({"slug": slug}))
+        return parse_data_to_json(self.collection.find_one({"slug": slug}))
 
     def get_data_by_user_and_slug(self, user_id: str, slug: str) -> dict:
         """Get Url by user ID and Slug."""
-        return parse_json(
+        return parse_data_to_json(
             self.collection.find_one(
                 format_search_query(["userID", "slug"], [user_id, slug])
             )
@@ -37,7 +37,7 @@ class UrlShortenerDB:
         """Find Urls by user ID."""
         return list(
             map(
-                parse_json,
+                parse_data_to_json,
                 self.collection.find(format_search_query(["userID"], [user_id])),
             )
         )
@@ -45,14 +45,21 @@ class UrlShortenerDB:
     def update_url(self, user_id: str, slug: str, long_url: str) -> bool:
         is_present = self.get_data_by_user_and_slug(user_id, slug=slug)
         if is_present:
-            result = self.collection.update_one({"userID": user_id, "slug": slug}, {"$set": {"longUrl": long_url}})
+            result = self.collection.update_one(
+                {"userID": user_id, "slug": slug}, {"$set": {"longUrl": long_url}}
+            )
             return result.modified_count > 0
         else:
             return False
 
-    # def delete_url(self, user_id: str, url_id: str) -> bool:
-    #     result = self.collection.delete_one({"user_id": user_id, "_id": ObjectId(url_id)})
-    #     return result.deleted_count > 0
+    def delete_url(self, user_id: str, slug: str) -> bool:
+        result = self.collection.delete_one({"userID": user_id, "slug": slug})
+        return result.deleted_count > 0
+
+    def increment_click_count(self, user_id: str, slug: str) -> None:
+        self.collection.update_one(
+            {"userID": user_id, "slug": slug}, {"$inc": {"clickCount": 1}}
+        )
 
     # # def generate_qr_code(self, url: str) -> str:
     # #     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
@@ -63,6 +70,3 @@ class UrlShortenerDB:
     # #     img.save(buffer, format="PNG")
     # #     qr_code_image = base64.b64encode(buffer.getvalue()).decode("ascii")
     # #     return qr_code_image
-
-    # def increment_click_count(self, user_id: str, url_id: str) -> None:
-    #     self.collection.update_one({"user_id": user_id, "_id": ObjectId(url_id)}, {"$inc": {"clickCount": 1}})

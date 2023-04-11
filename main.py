@@ -78,6 +78,7 @@ async def create_short_url(url: UrlSchema):
         response[
             "error"
         ] = f"An Error occurred. Error: {err}"
+        response['traceback'] = traceback.format_exc()
         return JSONResponse(response, 500)
 
 
@@ -94,6 +95,7 @@ async def get_slugs_for_user(user_id: str) -> list:
         return JSONResponse(response, 200)
     except Exception as err:
         response["error"] = f"Error: {err}."
+        response['traceback'] = traceback.format_exc()
         return JSONResponse(response, 500)
 
 
@@ -111,6 +113,7 @@ async def get_slug_data(user_id: str, slug_id: str, update_url: UrlUpdateSchema)
         return JSONResponse(response, 200)
     except Exception as err:
         response['error'] = err
+        response['traceback'] = traceback.format_exc()
         return JSONResponse(response, 500)
 
 
@@ -123,12 +126,14 @@ async def redirect_slug(slug: str):
         slug_data = url_shortner_db.get_url_data_by_slug(slug=slug)
         if not slug_data:
             raise HTTPException(status_code=404, detail="URL not found !")
+        url_shortner_db.increment_click_count(user_id=slug_data['userID'], slug=slug_data['slug'])
         return slug_data.get("longUrl")
     except HTTPException as err:
         response["error"] = f'url not found for parameter: {slug}'
         return JSONResponse(response, 404)
     except Exception as err:
         response["error"] = f"{err}"
+        response['traceback'] = traceback.format_exc()
         return JSONResponse(response, 500)
 
 
@@ -147,7 +152,8 @@ async def test():
         }
         return JSONResponse(response, 200)
     except Exception as err:
-        response["error"] = f"error : {err} \nTraceback : {traceback.format_exc()}"
+        response["error"] = f"error : {err}."
+        response['traceback'] = traceback.format_exc()
         return JSONResponse(response, 500)
 
 
