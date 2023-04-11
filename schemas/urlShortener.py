@@ -5,9 +5,10 @@ from common.constants import SLUG_LIMIT
 
 
 class UrlSchema(BaseModel):
-    longUrl: str
+    longUrl: str = Field(title="Long url which is to be shorten", example="https://chetan.vercel.app.com")
     customSlugCode: str | None = Field(
         default=None, title="The custom code for short url", max_length=SLUG_LIMIT,
+        example= "vercel"
     )
 
     @validator('longUrl')
@@ -27,5 +28,5 @@ class UrlSchema(BaseModel):
         }
 
 class UrlUpdateSchema(BaseModel):
-    longUrl: str = Field(title="Original url for update")
+    longUrl: str = Field(title="Original url for update", example="https://chetan.vercel.app.com")
  
