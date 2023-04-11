@@ -2,8 +2,10 @@
 # from io import BytesIO
 # from bson import ObjectId
 import base64
+from datetime import datetime
+
 from pymongo import MongoClient
-from datetime import datetime 
+
 from utils.helper_utilities import format_search_query
 
 
@@ -14,27 +16,39 @@ class UrlShortenerDB:
         self.collection = self.db[collection_name]
 
     def create_url(self, data: dict) -> str:
-        result = self.collection.insert_one({
-            **data,
-            "clickCount": 0,
-            "createdAt": datetime.now()
-        })
+        result = self.collection.insert_one(
+            {**data, "clickCount": 0, "createdAt": datetime.now()}
+        )
         return result
 
     def get_url_data_by_slug(self, slug: str) -> dict:
         """Get url data by slug."""
-        return  dict(self.collection.find_one({"slug": slug}))
+        return dict(self.collection.find_one({"slug": slug}))
 
     def get_data_by_user_and_slug(self, user_id: str, slug: str) -> dict:
         """Get Url by user ID and Slug."""
-        return dict(self.collection.find_one(format_search_query(["userID", "slug"], [user_id, slug])))
-    
+        return dict(
+            self.collection.find_one(
+                format_search_query(["userID", "slug"], [user_id, slug])
+            )
+        )
+
     def get_urls_data_by_user_id(self, user_id: str) -> list:
         """Find Urls by user ID."""
-        return list(self.collection.find(format_search_query(["userID"], [user_id])))
+
+        def map_id(x):
+            x["_id"] = str(x["_id"])
+            return x
+
+        return list(
+            map(
+                map_id,
+                self.collection.find(format_search_query(["userID"], [user_id])),
+            )
+        )
 
     # def update_url(self, user_id: str, url_id: str, url: str) -> bool:
-        # result = self.collection.update_one({"userID": user_id, "_id": ObjectId(url_id)}, {"$set": {"url": url}})
+    # result = self.collection.update_one({"userID": user_id, "_id": ObjectId(url_id)}, {"$set": {"url": url}})
     #     return result.modified_count > 0
 
     # def delete_url(self, user_id: str, url_id: str) -> bool:
