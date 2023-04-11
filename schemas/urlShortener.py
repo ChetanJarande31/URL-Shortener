@@ -26,3 +26,6 @@ class UrlSchema(BaseModel):
             ]
         }
 
+class UrlUpdateSchema(BaseModel):
+    longUrl: str = Field(title="Original url for update")
+ 

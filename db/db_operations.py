@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pymongo import MongoClient
 
-from utils.helper_utilities import format_search_query
+from utils.helper_utilities import format_search_query, parse_json
 
 
 class UrlShortenerDB:
@@ -23,11 +23,11 @@ class UrlShortenerDB:
 
     def get_url_data_by_slug(self, slug: str) -> dict:
         """Get url data by slug."""
-        return dict(self.collection.find_one({"slug": slug}))
+        return parse_json(self.collection.find_one({"slug": slug}))
 
     def get_data_by_user_and_slug(self, user_id: str, slug: str) -> dict:
         """Get Url by user ID and Slug."""
-        return dict(
+        return parse_json(
             self.collection.find_one(
                 format_search_query(["userID", "slug"], [user_id, slug])
             )
@@ -35,21 +35,20 @@ class UrlShortenerDB:
 
     def get_urls_data_by_user_id(self, user_id: str) -> list:
         """Find Urls by user ID."""
-
-        def map_id(x):
-            x["_id"] = str(x["_id"])
-            return x
-
         return list(
             map(
-                map_id,
+                parse_json,
                 self.collection.find(format_search_query(["userID"], [user_id])),
             )
         )
 
-    # def update_url(self, user_id: str, url_id: str, url: str) -> bool:
-    # result = self.collection.update_one({"userID": user_id, "_id": ObjectId(url_id)}, {"$set": {"url": url}})
-    #     return result.modified_count > 0
+    def update_url(self, user_id: str, slug: str, long_url: str) -> bool:
+        is_present = self.get_data_by_user_and_slug(user_id, slug=slug)
+        if is_present:
+            result = self.collection.update_one({"userID": user_id, "slug": slug}, {"$set": {"longUrl": long_url}})
+            return result.modified_count > 0
+        else:
+            return False
 
     # def delete_url(self, user_id: str, url_id: str) -> bool:
     #     result = self.collection.delete_one({"user_id": user_id, "_id": ObjectId(url_id)})

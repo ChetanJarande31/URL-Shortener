@@ -2,25 +2,22 @@
 import base64
 import os
 import traceback
-
 import shortuuid
 
 # FastAPI
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 # instagram
 from instaloader import Instaloader, Profile
-from starlette.responses import RedirectResponse
-
 
 # # other
 from common.config import COLLECTION_NAME, DB_NAME, MONGO_DB_URL
 from common.constants import SLUG_LIMIT, USER_ID
 from db.db_operations import UrlShortenerDB
-from schemas.urlShortener import UrlSchema
+from schemas.urlShortener import UrlSchema, UrlUpdateSchema
 
 
 # # ******************----------- End Of Imports -----------******************
@@ -58,7 +55,9 @@ async def create_short_url(url: UrlSchema):
     try:
         # convert pydantic schema object to python dict
         url = dict(url)
-        slug = url.get("customSlugCode", shortuuid.ShortUUID().random(length=SLUG_LIMIT))
+        slug = url.get(
+            "customSlugCode", shortuuid.ShortUUID().random(length=SLUG_LIMIT)
+        )
 
         # check is url exist in DB , IF so raise an exception
         db_url_data = url_shortner_db.get_url_data_by_slug(slug=slug)
@@ -78,7 +77,7 @@ async def create_short_url(url: UrlSchema):
     except Exception as err:
         response[
             "error"
-        ] = f"An Error occurred. Error: {err} \nTraceback : {traceback.format_exc()}"
+        ] = f"An Error occurred. Error: {err}"
         return JSONResponse(response, 500)
 
 
@@ -94,7 +93,42 @@ async def get_slugs_for_user(user_id: str) -> list:
             response["message"] = f"no data found for a user {user_id}"
         return JSONResponse(response, 200)
     except Exception as err:
-        response["error"] = f"Error: {err}. \nTraceback : {traceback.format_exc()}"
+        response["error"] = f"Error: {err}."
+        return JSONResponse(response, 500)
+
+
+@app.put("/api/update/{user_id}/slug/{slug_id}")
+async def get_slug_data(user_id: str, slug_id: str, update_url: UrlUpdateSchema):
+    response = {}
+    long_url = update_url.longUrl
+    try:
+        result = url_shortner_db.update_url(user_id=user_id, slug=slug_id, long_url=long_url)
+        response['message'] = (
+            f'Successfully update the URL={long_url} for User: {user_id} & Slug:{slug_id}.' 
+            if result 
+            else f"Provided Slug={slug_id} does not exist in DB."
+        )
+        return JSONResponse(response, 200)
+    except Exception as err:
+        response['error'] = err
+        return JSONResponse(response, 500)
+
+
+# # API redirection for Slug
+@app.get("/{slug}", response_class=RedirectResponse)
+async def redirect_slug(slug: str):
+    """Redirect of slug url using Long url."""
+    response = {}
+    try:
+        slug_data = url_shortner_db.get_url_data_by_slug(slug=slug)
+        if not slug_data:
+            raise HTTPException(status_code=404, detail="URL not found !")
+        return slug_data.get("longUrl")
+    except HTTPException as err:
+        response["error"] = f'url not found for parameter: {slug}'
+        return JSONResponse(response, 404)
+    except Exception as err:
+        response["error"] = f"{err}"
         return JSONResponse(response, 500)
 
 
@@ -109,7 +143,7 @@ async def test():
             "get_data_by_user_and_slug": url_shortner_db.get_data_by_user_and_slug(
                 user_id=USER_ID, slug="Gamil"
             ),
-            "get_url_data_by_slug": url_shortner_db.get_url_data_by_slug(slug="test"),
+            "get_url_data_by_slug": url_shortner_db.get_url_data_by_slug(slug="MyGithub"),
         }
         return JSONResponse(response, 200)
     except Exception as err:
@@ -117,20 +151,7 @@ async def test():
         return JSONResponse(response, 500)
 
 
-@app.get("/{slug}")
-async def redirect_slug(slug: str):
-    """Redirect of slug url using Long url."""
-    response = {}
-    try:
-        slug_data = url_shortner_db.get_url_data_by_slug(slug=slug)
-        if not slug_data:
-            raise HTTPException(status_code=404, detail="URL not found !")
-        response = RedirectResponse(url=slug_data["longUrl"])
-        return JSONResponse(response, 200)
-    except Exception as err:
-        response["error"] = f"Error {err} \nTraceback : {traceback.format_exc()}"
-        return JSONResponse(response, 500)
-
+# # *****************------------------------ Instagram Loader ------------------------*****************
 
 # insta profile picture url
 @app.get("/bot/get-insta-profile/{profile_id}")
