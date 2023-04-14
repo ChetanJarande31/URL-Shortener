@@ -12,13 +12,14 @@ from fastapi.templating import Jinja2Templates
 
 # instagram
 from instaloader import Instaloader, Profile
+from instaloader.exceptions import ProfileNotExistsException
 
 # # other
 from common.config import COLLECTION_NAME, DB_NAME, MONGO_DB_URL
 from common.constants import SLUG_LIMIT, USER_ID
 from db.db_operations import UrlShortenerDB
-from schemas.urlShortener import UrlSchema, UrlUpdateSchema
-
+from schemas.urlShortener import UrlSchema, UrlUpdateSchema, TestSchema
+from utils.helper_utilities import generate_qr_code
 
 # # ******************----------- End Of Imports -----------******************
 
@@ -55,25 +56,29 @@ async def create_short_url(url: UrlSchema):
     try:
         # convert pydantic schema object to python dict
         url = dict(url)
-        slug = url.get(
-            "customSlugCode", shortuuid.ShortUUID().random(length=SLUG_LIMIT)
-        )
-
+        slug = url.get("customSlugCode") if url.get('customSlugCode') else shortuuid.ShortUUID().random(length=SLUG_LIMIT)
+        
         # check is url exist in DB , IF so raise an exception
         db_url_data = url_shortner_db.get_url_data_by_slug(slug=slug)
         if db_url_data:
-            raise HTTPException(
-                status_code=400, detail="Slug code is invalid, It has been used."
-            )
+            raise HTTPException(status_code=404, detail=f"Slug code is invalid, It has been used. found {db_url_data}")
         url_data = {
             "userID": USER_ID,
             "longUrl": url.get("longUrl"),
             "slug": slug,
         }
+        # if url.get('makeQrcode'):
+        #     response['qr_code'] = generate_qr_code(url=url.get("longUrl"))
         inserted = url_shortner_db.create_url(data=url_data)
-        response["message"] = f"url={url['longUrl']} inserted {inserted}"
-        response["data"] = url_data
+        response = {
+            'message': f"create short url for url={url['longUrl']}",
+            'data': url_data,
+            'inserted': inserted,
+        }
         return JSONResponse(response, 200)
+    except HTTPException as http_exception:
+        response['error'] = http_exception.detail
+        return JSONResponse(response, http_exception.status_code)
     except Exception as err:
         response[
             "error"
@@ -137,19 +142,31 @@ async def redirect_slug(slug: str):
         return JSONResponse(response, 500)
 
 
-@app.get("/api/test")
-async def test():
+@app.post("/api/test/{method}")
+async def test(method: str, test_schema: TestSchema):
     response = {}
     try:
-        response = {
-            "get_urls_data_by_user_id": url_shortner_db.get_urls_data_by_user_id(
-                user_id=USER_ID
-            ),
-            "get_data_by_user_and_slug": url_shortner_db.get_data_by_user_and_slug(
-                user_id=USER_ID, slug="Gamil"
-            ),
-            "get_url_data_by_slug": url_shortner_db.get_url_data_by_slug(slug="MyGithub"),
-        }
+        if method == "get":
+            response = {
+                "get_urls_data_by_user_id": url_shortner_db.get_urls_data_by_user_id(
+                    user_id=test_schema.userID
+                ),
+                "get_data_by_user_and_slug": url_shortner_db.get_data_by_user_and_slug(
+                    user_id=test_schema.userID, slug= test_schema.slugCode or "Gamil" 
+                ),
+                "get_url_data_by_slug": url_shortner_db.get_url_data_by_slug(slug= test_schema.slugCode or "MyGithub"),
+            }
+        elif method == 'deleteMany':
+            data = {
+                'userID': test_schema.userID or 'CHETAN_JARANDE',
+                'longUrl': test_schema.longUrl or 'https://github.com/Chetan_Jarande31',
+            }
+            response = {
+                'delete_many': url_shortner_db.delete_many_url(filter_data=data),
+                'filter_data': data,
+            }
+        else:
+            response["error"] = f'provided method={method} is invalid.'
         return JSONResponse(response, 200)
     except Exception as err:
         response["error"] = f"error : {err}."
@@ -160,9 +177,15 @@ async def test():
 # # *****************------------------------ Instagram Loader ------------------------*****************
 
 # insta profile picture url
-@app.get("/bot/get-insta-profile/{profile_id}")
+@app.get("/api/instagram/get-insta-profile/{profile_id}")
 async def get_insta_profile_url(profile_id: str):
-    response = {
-        "url": Profile.from_username(Instaloader().context, profile_id).profile_pic_url
-    }
+    response= {}
+    try:
+        response = {
+            "instagramProfilePicUrl": Profile.from_username(Instaloader().context, profile_id).profile_pic_url
+        }
+    except ProfileNotExistsException as insta_profile_not_exist_exception:
+        response['error'] = str(insta_profile_not_exist_exception)
+    except Exception as err:
+        response['error'] = err
     return response

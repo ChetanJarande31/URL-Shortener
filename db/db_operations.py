@@ -1,11 +1,6 @@
-# import qrcode
-# from io import BytesIO
 # from bson import ObjectId
-import base64
 from datetime import datetime
-
 from pymongo import MongoClient
-
 from utils.helper_utilities import format_search_query, parse_data_to_json
 
 
@@ -19,7 +14,7 @@ class UrlShortenerDB:
         result = self.collection.insert_one(
             {**data, "clickCount": 0, "createdAt": datetime.now()}
         )
-        return result
+        return parse_data_to_json({'insertedAcknowledged': result.acknowledged, 'inserted_id':result.inserted_id})
 
     def get_url_data_by_slug(self, slug: str) -> dict:
         """Get url data by slug."""
@@ -55,18 +50,17 @@ class UrlShortenerDB:
     def delete_url(self, user_id: str, slug: str) -> bool:
         result = self.collection.delete_one({"userID": user_id, "slug": slug})
         return result.deleted_count > 0
+    
+    def delete_many_url(self, filter_data: dict) -> dict:
+        """
+        Delete more than one documents based on filtered data passed.
+        params: filter_Data: type(dict),
+        description: data for filtration must includes the userID field in it.
+        """
+        result = self.collection.delete_many(filter=filter_data)
+        return {'deletedAcknowledged': result.acknowledged, 'deletedCount': result.deleted_count}
 
     def increment_click_count(self, user_id: str, slug: str) -> None:
         self.collection.update_one(
             {"userID": user_id, "slug": slug}, {"$inc": {"clickCount": 1}}
         )
-
-    # # def generate_qr_code(self, url: str) -> str:
-    # #     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
-    # #     qr.add_data(url)
-    # #     qr.make(fit=True)
-    # #     img = qr.make_image(fill_color="black", back_color="white")
-    # #     buffer = BytesIO()
-    # #     img.save(buffer, format="PNG")
-    # #     qr_code_image = base64.b64encode(buffer.getvalue()).decode("ascii")
-    # #     return qr_code_image
