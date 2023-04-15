@@ -1,6 +1,7 @@
 # import qrcode
 import base64
 import os
+import json
 import traceback
 import shortuuid
 
@@ -9,6 +10,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.encoders import jsonable_encoder
 
 # instagram
 from instaloader import Instaloader, Profile
@@ -47,6 +49,8 @@ app.add_middleware(
 # # FastApi End points
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    # print(f"{(json.dumps(dict(request),default=str, indent=4))}")
+    # print(f"{request.client}")
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -143,7 +147,7 @@ async def redirect_slug(slug: str):
 
 
 @app.post("/api/test/{method}")
-async def test(method: str, test_schema: TestSchema):
+async def test(method: str, test_schema: TestSchema, request: Request):
     response = {}
     try:
         if method == "get":
@@ -155,6 +159,7 @@ async def test(method: str, test_schema: TestSchema):
                     user_id=test_schema.userID, slug= test_schema.slugCode or "Gamil" 
                 ),
                 "get_url_data_by_slug": url_shortner_db.get_url_data_by_slug(slug= test_schema.slugCode or "MyGithub"),
+                'request': request.client.host,
             }
         elif method == 'deleteMany':
             data = {
